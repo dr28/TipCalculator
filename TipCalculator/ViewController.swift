@@ -9,11 +9,12 @@
 import UIKit
 
 class ViewController: UIViewController {
-    let steps: Float = 1.0
 
     @IBOutlet weak var separationView: UIView!
+    
     @IBOutlet weak var tipSegmentControl: UISegmentedControl!
     @IBOutlet weak var tipSlider: UISlider!
+    
     @IBOutlet weak var billText: UITextField!
     @IBOutlet weak var taxText: UITextField!
     @IBOutlet weak var tipPercentageLabel: UILabel!
@@ -22,112 +23,118 @@ class ViewController: UIViewController {
     @IBOutlet weak var totalLabel: UILabel!
     
     let defaults = UserDefaults.standard
-    var defaultTipPercentage:Any? = nil
+   
     var doNotTipOnTax = 0
     var showSlider = 0
+    
+    var defaultTipPercentage:Any? = nil //Amt without %
+
     var tipPercentage: [String]? = nil //[0.18,0.2,0.25]
+    
+    let localeSpecificFormatter = NumberFormatter()
+
+    var localeSpecificCurrencySymbol : String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         // Do any additional setup after loading the view, typically from a nib.
-        taxText.isHidden = true
         
+        // Locale specific currency and thousands separator 
+        localeSpecificFormatter.numberStyle = .currency
+        
+        localeSpecificCurrencySymbol = (Locale.current as NSLocale).displayName(forKey: .currencySymbol, value: Locale.current.currencyCode as Any)! // .object(forKey: .countryCode)
 
-        
+        billText.placeholder = localeSpecificCurrencySymbol
+        tipLabel.text = localeSpecificCurrencySymbol
+        totalLabel.text = localeSpecificCurrencySymbol
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        print("view will appear")
+        
         billText.becomeFirstResponder()
 
-        self.navigationItem.rightBarButtonItem?.title = NSString(string: "\u{2699}\u{0000FE0E}") as String
+        self.navigationItem.rightBarButtonItem?.title = NSString(string: "\u{2699}\u{0000FE0E}") as String // Gear icon
         let font = UIFont.systemFont(ofSize: 28) // adjust the size as required
         let attributes = [NSFontAttributeName : font]
-        self.navigationItem.rightBarButtonItem?.setTitleTextAttributes(attributes, for: .normal)        //
+        self.navigationItem.rightBarButtonItem?.setTitleTextAttributes(attributes, for: .normal)
 
         defaultTipPercentage = defaults.object(forKey: "DEFAULT_TIP_PERCENTAGE")
 
         if(defaultTipPercentage == nil)
         {
-            defaultTipPercentage = "20.00" as String
+            defaultTipPercentage = "20.00" as String // First time default
         }
-        else
-        {
-            defaultTipPercentage = (defaultTipPercentage as! String).replacingOccurrences(of: "%", with: "")
-        }
+        
+        localeSpecificFormatter.numberStyle = .decimal
+        localeSpecificFormatter.minimumFractionDigits = 2
+        localeSpecificFormatter.maximumFractionDigits = 2
 
-        tipPercentageLabel.text = (defaultTipPercentage as! String).appending("%")
+        tipPercentageLabel.text = localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
 
-        //print("------\(defaultTipPercentage as! String)")
         
         doNotTipOnTax = defaults.integer(forKey: "DO_NOT_TIP_0N_TAX")
         
-        if(doNotTipOnTax == 1)
+        taxText.isHidden = (doNotTipOnTax == 0)
+
+        if(taxText.isHidden)
         {
-            taxText.isHidden = false
-        }
-        else{
             taxText.text = ""
-            taxText.isHidden = true
+        }
+      
+
+        showSlider = defaults.integer(forKey: "SHOW_TIP_SLIDER")
+
+        tipSegmentControl.isHidden = (showSlider == 1)
+        tipSlider.isHidden = !(showSlider == 1)
+
+        
+        if(tipSegmentControl.isHidden) // Show slider
+        {
+            separationView.backgroundColor = UIColor.init(hue: 0.35, saturation: 0.82, brightness: 0.53, alpha: 1)
+            
+            let tipMinPercentage = defaults.object(forKey: "TIP_MIN_PERCENTAGE")
+            
+            tipSlider.minimumValue = Float(tipMinPercentage as! String)!
+            
+            let tipMaxPercentage = defaults.object(forKey: "TIP_MAX_PERCENTAGE")
+
+            tipSlider.maximumValue = Float(tipMaxPercentage as! String)!
+            
+            tipSlider.value = Float(defaultTipPercentage as! String)!
+        }
+        else { // Show segmented control
+            
+            separationView.backgroundColor = UIColor.clear
+            
+            let offset : Float = 5
+
+            let tipMinPercentage = String(format: "%.2f", Float(defaultTipPercentage as! String)! - offset)
+            
+            let tipMaxPercentage = String(format: "%.2f", Float(defaultTipPercentage as! String)! + offset)
+            
+            // Locale specific display
+
+            tipPercentage = [localeSpecificFormatter.string(from: Float(tipMinPercentage as String!)! as NSNumber)!.appending("%"),
+            localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%"),
+            localeSpecificFormatter.string(from: Float(tipMaxPercentage as String!)! as NSNumber)!.appending("%")]
+            
+            tipSegmentControl.selectedSegmentIndex = 1
+
+            tipSegmentControl.setTitle(tipPercentage?[((tipPercentage?.count)! - (tipPercentage?.count)!)], forSegmentAt: ((tipPercentage?.count)! - (tipPercentage?.count)!))
+            tipSegmentControl.setTitle(tipPercentage?[tipSegmentControl.selectedSegmentIndex], forSegmentAt: tipSegmentControl.selectedSegmentIndex)
+            tipSegmentControl.setTitle(tipPercentage?[((tipPercentage?.count)! - tipSegmentControl.selectedSegmentIndex)], forSegmentAt: ((tipPercentage?.count)! - tipSegmentControl.selectedSegmentIndex))
 
         }
-
         
         if(!(billText.text?.isEmpty)!)
         {
             calculateTax()
         }
-        
-        showSlider = defaults.integer(forKey: "SHOW_TIP_SLIDER")
-        if(showSlider == 1)
-        {
-            separationView.backgroundColor = UIColor.init(hue: 0.35, saturation: 0.82, brightness: 0.53, alpha: 1)
-
-            tipSegmentControl.isHidden = true
-            tipSlider.isHidden = false
-            
-            var tipMinPercentage = defaults.object(forKey: "TIP_MIN_PERCENTAGE")
-            //print("tipMinPercentage \(tipMinPercentage)")
-
-            tipMinPercentage = (tipMinPercentage! as! String).replacingOccurrences(of: "%", with: "")
-
-            tipSlider.minimumValue = Float(tipMinPercentage as! String)!
-            
-            //print("tipSlider.minimumValue \(tipSlider.minimumValue)")
-            
-            var tipMaxPercentage = defaults.object(forKey: "TIP_MAX_PERCENTAGE")
-            //print("tipMaxPercentage \(tipMaxPercentage)")
-            
-            tipMaxPercentage = (tipMaxPercentage! as! String).replacingOccurrences(of: "%", with: "")
-            
-
-            tipSlider.maximumValue = Float(tipMaxPercentage as! String)!
-            
-            //print("maximumValue \(tipSlider.maximumValue)")
-
-            tipSlider.value = Float((defaultTipPercentage as! String).replacingOccurrences(of: "%", with: ""))!
-        }
-        else{
-            
-            tipSlider.isHidden = true
-            separationView.backgroundColor = UIColor.clear
-            tipSegmentControl.isHidden = false
-            
-            let tipMinPercentage = String(format: "%.2f", Float(defaultTipPercentage as! String)! - 5)
-            let tipMaxPercentage = String(format: "%.2f", Float(defaultTipPercentage as! String)! + 5)
-
-            tipPercentage = [tipMinPercentage.appending("%"),(defaultTipPercentage as! String).appending("%"),tipMaxPercentage.appending("%")]
-
-            tipSegmentControl.setTitle(tipMinPercentage.appending("%"), forSegmentAt: 0)
-            tipSegmentControl.setTitle((defaultTipPercentage as! String).appending("%"), forSegmentAt: 1)
-            tipSegmentControl.setTitle(tipMaxPercentage.appending("%"), forSegmentAt: 2)
-            tipSegmentControl.selectedSegmentIndex = 1
-
-        }
-
 
     }
+    
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
@@ -148,30 +155,35 @@ class ViewController: UIViewController {
     
     func calculateTax()
     {
-        //print("calculateTax")
-        var bill = Double(billText.text!) ?? 0
+        
+        let numFormatter = NumberFormatter() // convert locale specific currency number to number for calculation
+
+        var convertedNum = numFormatter.number(from: billText.text!) ?? 0
+
+        let bill = Double.init(convertedNum)
+
         var tax = 0.0
-        //print(bill)
+
+        convertedNum = numFormatter.number(from: (tipPercentageLabel.text?.replacingOccurrences(of: "%", with: ""))!) ?? 0
         
-        let tipPercentage = Double((tipPercentageLabel.text?.replacingOccurrences(of: "%", with: ""))!) ?? 0
+        let tipPercentage = Double.init(convertedNum)
         
-        //print("tipPercentage --- \(tipPercentage)")
-        
-        if(doNotTipOnTax == 1)
+        if(doNotTipOnTax == 1 && !(taxText.text?.isEmpty)!)
         {
-            tax = Double(taxText.text!) ?? 0
+            convertedNum = numFormatter.number(from: taxText.text!) ?? 0
+            
+            tax = Double.init(convertedNum)
 
         }
         
         let tip =  (bill - tax) * tipPercentage / 100
         
-        //print(tip)
-        
         let total = bill +  tip
-        //print(total)
+
+        tipLabel.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: tip as NSNumber)!)
+
+        totalLabel.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: total as NSNumber)!)
         
-        tipLabel.text = String(format: "$%.2f", tip)
-        totalLabel.text = String(format: "$%.2f", total)
     }
     
     @IBAction func deductTaxFromBill(_ sender: Any) {
@@ -181,9 +193,9 @@ class ViewController: UIViewController {
     
     
     @IBAction func onSliderValueChanged(_ sender: Any) {
-       
-        //print("\(tipSlider.value)")
-        tipPercentageLabel.text = String(format: "%.2f", tipSlider.value).appending("%")
+        
+        tipPercentageLabel.text = localeSpecificFormatter.string(from: tipSlider.value as NSNumber)!.appending("%") // Locale specific display
+
         calculateTax()
 
     }
@@ -192,11 +204,8 @@ class ViewController: UIViewController {
         
         tipPercentageLabel.text = tipPercentage?[tipSegmentControl.selectedSegmentIndex]
         calculateTax()
-
         
     }
-   
-    
 
 }
 

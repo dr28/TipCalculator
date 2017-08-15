@@ -24,91 +24,71 @@ class SettingsViewController: UIViewController {
     
     
     let defaults = UserDefaults.standard
+    
     var defaultTipPercentage:Any? = nil
     var tipMinPercentage:Any? = nil
     var tipMaxPercentage:Any? = nil
+    let localeSpecificFormatter = NumberFormatter()
 
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-
         // Do any additional setup after loading the view.
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        print("view will appear")
+        
         defaultTaxText.tag = 1
         tipMinText.tag = 2
         tipMaxText.tag = 3
         
         defaultTipPercentage = defaults.object(forKey: "DEFAULT_TIP_PERCENTAGE")
-        //let intValue = defaults.integerForKey("another_key_that_you_choose")
-        if(defaultTipPercentage == nil)
+
+        if(defaultTipPercentage == nil || (defaultTipPercentage as! String).compare("0.00").rawValue == 0)
         {
-            //print("entered")
             defaultTipPercentage = "20.00" as String
         }
-        else
-        {
-            defaultTipPercentage = (defaultTipPercentage as! String).replacingOccurrences(of: "%", with: "")
-        }
-        //print("------\(defaultTipPercentage as! String)")
-        defaultTaxText.text = (defaultTipPercentage as! String).appending("%")
-
         
+        localeSpecificFormatter.numberStyle = .decimal
+        localeSpecificFormatter.minimumFractionDigits = 2
+        localeSpecificFormatter.maximumFractionDigits = 2
+
+        defaultTaxText.text = localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
+
         tipMinPercentage = defaults.object(forKey: "TIP_MIN_PERCENTAGE")
-        //print("tipMinPercentage------\(tipMinPercentage)")
 
         if(tipMinPercentage == nil)
         {
-            //print("entered")
             tipMinPercentage = String(format: "%.2f", Float(defaultTipPercentage as! String)! - 10)
         }
-        else
-        {
-            tipMinPercentage = (tipMinPercentage as! String).replacingOccurrences(of: "%", with: "")
-        }
-        tipMinText.text = (tipMinPercentage as! String).appending("%")
+        
+        tipMinText.text = localeSpecificFormatter.string(from: Float(tipMinPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
 
         tipMaxPercentage = defaults.object(forKey: "TIP_MAX_PERCENTAGE")
-        //print("tipMaxPercentage------\(tipMaxPercentage)")
 
         if(tipMaxPercentage == nil)
         {
-            //print("entered")
             tipMaxPercentage = String(format: "%.2f", Float(defaultTipPercentage as! String)! + 10)
         }
-        else
-        {
-            tipMaxPercentage = (tipMaxPercentage as! String).replacingOccurrences(of: "%", with: "")
-        }
-        tipMaxText.text = (tipMaxPercentage as! String).appending("%")
-
-
-        //print("--%^%^%^%^%^%^---\(defaults.integer(forKey: "DO_NOT_TIP_0N_TAX"))")
+        
+        tipMaxText.text = localeSpecificFormatter.string(from: Float(tipMaxPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
 
         doNotTipOnTax.tag = 1
         if(defaults.integer(forKey: "DO_NOT_TIP_0N_TAX") == 0)
         {
             doNotTipOnTax.isOn = false
-           // defaults.set(0, forKey: "DO_NOT_TIP_0N_TAX")
-           // defaults.synchronize()
-
         }
+        
         showTipSlider.tag = 2
-
         if(defaults.integer(forKey: "SHOW_TIP_SLIDER") == 0)
         {
             showTipSlider.isOn = false
-            // defaults.set(0, forKey: "DO_NOT_TIP_0N_TAX")
-            // defaults.synchronize()
             tipMinLabel.isHidden = true
             tipMinText.isHidden = true
             tipMaxLabel.isHidden = true
             tipMaxText.isHidden = true
-            
         }
         
     }
@@ -123,14 +103,15 @@ class SettingsViewController: UIViewController {
     }
 
     @IBAction func clearText(_ sender: Any) {
-        print("clearText")
+
         let textField : UITextField = sender as! UITextField
-        if(textField.tag == 1)
+        
+        if(textField.tag == defaultTaxText.tag)
         {
             defaultTaxText.text = ""
 
         }
-        else if (textField.tag == 2)
+        else if (textField.tag == tipMinText.tag)
         {
             tipMinText.text = ""
             
@@ -143,66 +124,71 @@ class SettingsViewController: UIViewController {
     }
     
     @IBAction func editingEnded(_ sender: Any) {
-        print("editingEnded")
         
         let textField : UITextField = sender as! UITextField
-        if(textField.tag == 1)
+        
+        let numFormatter = NumberFormatter() // convert locale specific currency number to number for calculation
+        //numFormatter.numberStyle = .decimal
+
+        if(textField.tag == defaultTaxText.tag)
         {
-
-            if(defaultTaxText.text == nil || (defaultTaxText.text?.isEmpty)!)
+            let tempPercentText = defaultTaxText.text?.replacingOccurrences(of: "%", with: "")
+            
+            if(numFormatter.number(from: tempPercentText!) == nil || (defaultTaxText.text?.isEmpty)!) // invalid number
             {
-                //print("editingEnded is == nil or empty")
-
-                defaultTaxText.text = String(format: "%.2f", Float(defaultTipPercentage as! String)!).appending("%")
+                defaultTaxText.text = localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
             }
             else
             {
-                defaultTaxText.text = String(format: "%.2f", Float(defaultTaxText.text!)!).appending("%")
-
-            }
-
-        }
-        else if (textField.tag == 2)
-        {
-            if(tipMinText.text == nil || (tipMinText.text?.isEmpty)!)
-            {
-                tipMinText.text = String(format: "%.2f", Float(tipMinPercentage as! String)!).appending("%")
-            }
-            else
-            {
-                tipMinText.text = String(format: "%.2f", Float(tipMinText.text!)!).appending("%")
+                defaultTipPercentage = numFormatter.number(from: tempPercentText!)?.stringValue//defaultTaxText.text?.replacingOccurrences(of: "%", with: "")
+                
+                defaultTaxText.text = localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
                 
             }
-            //print("tipMinText.text --** \(tipMinText.text)")
+        }
+        else if (textField.tag == tipMinText.tag)
+        {
+            let tempPercentText = tipMinText.text?.replacingOccurrences(of: "%", with: "")
+            
+            if(numFormatter.number(from: tempPercentText!) == nil || (tipMinText.text?.isEmpty)!) // invalid number
+            {
+                tipMinText.text = localeSpecificFormatter.string(from: Float(tipMinPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
+            }
+            else
+            {
+                tipMinPercentage = numFormatter.number(from: tempPercentText!)?.stringValue//tipMinText.text?.replacingOccurrences(of: "%", with: "")
 
+                tipMinText.text = localeSpecificFormatter.string(from: Float(tipMinPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
 
+            }
         }
         else{
-            if(tipMaxText.text == nil || (tipMaxText.text?.isEmpty)!)
+            
+            let tempPercentText = tipMaxText.text?.replacingOccurrences(of: "%", with: "")
+            
+            if(numFormatter.number(from: tempPercentText!) == nil || (tipMaxText.text?.isEmpty)!) // invalid number
             {
-                tipMaxText.text = String(format: "%.2f", Float(tipMaxPercentage as! String)!).appending("%")
+                tipMaxText.text = localeSpecificFormatter.string(from: Float(tipMaxPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
+
             }
             else{
-                tipMaxText.text = String(format: "%.2f", Float(tipMaxText.text!)!).appending("%")
+                
+                tipMaxPercentage = numFormatter.number(from: tempPercentText!)?.stringValue // Locale specific display
+                //tipMaxText.text?.replacingOccurrences(of: "%", with: "")
 
+                tipMaxText.text = localeSpecificFormatter.string(from: Float(tipMaxPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
+                
             }
-            //print("tipMaxText --** \(tipMaxText.text)")
-
-
-            
         }
         storeTextValue(tag: textField.tag)
-
-
-        
-        
 
     }
     
     @IBAction func uiSwitchValueChange(_ sender: Any) {
         let uiSwitch : UISwitch = sender as! UISwitch
-        print("uiSwitchValueChange")
         
+        self.view.endEditing(true)
+
         if(uiSwitch.tag == 1)
         {
             var tipOnTaxValue = 0
@@ -210,9 +196,8 @@ class SettingsViewController: UIViewController {
             if(doNotTipOnTax.isOn)
             {
                 tipOnTaxValue = 1
-
-
             }
+            
             defaults.set(tipOnTaxValue, forKey: "DO_NOT_TIP_0N_TAX")
             defaults.synchronize()
         }
@@ -220,24 +205,32 @@ class SettingsViewController: UIViewController {
         {
             var showSlider = 0
             
+            tipMinLabel.isHidden = !showTipSlider.isOn
+            tipMinText.isHidden = !showTipSlider.isOn
+            tipMaxLabel.isHidden = !showTipSlider.isOn
+            tipMaxText.isHidden = !showTipSlider.isOn
+            
             if(showTipSlider.isOn)
             {
                 showSlider = 1
-                tipMinLabel.isHidden = false
-                tipMinText.isHidden = false
-                tipMaxLabel.isHidden = false
-                tipMaxText.isHidden = false
-                defaults.set(tipMinText.text, forKey: "TIP_MIN_PERCENTAGE" )
-                defaults.set(tipMaxText.text, forKey: "TIP_MAX_PERCENTAGE" )
-
-
                 
-            }
-            else{
-                tipMinLabel.isHidden = true
-                tipMinText.isHidden = true
-                tipMaxLabel.isHidden = true
-                tipMaxText.isHidden = true
+                tipMinPercentage = tipMinText.text?.replacingOccurrences(of: "%", with: "")
+                tipMaxPercentage = tipMaxText.text?.replacingOccurrences(of: "%", with: "")
+                
+                let numFormatter = NumberFormatter() // convert locale specific number to number for calculation
+                
+                var convertedNum = numFormatter.number(from: tipMinPercentage! as! String) ?? 0
+                
+                var convertedNum2Double = Double.init(convertedNum)
+                
+                defaults.set(String(format: "%.2f", convertedNum2Double), forKey: "TIP_MIN_PERCENTAGE" )
+                
+                convertedNum = numFormatter.number(from: tipMaxPercentage! as! String) ?? 0
+                
+                convertedNum2Double = Double.init(convertedNum)
+                
+                defaults.set(String(format: "%.2f", convertedNum2Double), forKey: "TIP_MAX_PERCENTAGE" )
+
             }
             defaults.set(showSlider, forKey: "SHOW_TIP_SLIDER")
             defaults.synchronize()
@@ -245,53 +238,122 @@ class SettingsViewController: UIViewController {
     }
     
     @IBAction func minTipTextEditingChanged(_ sender: Any) {
+        
         let textField : UITextField = sender as! UITextField
-
+        
         storeTextValue(tag: textField.tag)
 
     }
+    
     @IBAction func maxTipTextEditingChanged(_ sender: Any) {
+
         let textField : UITextField = sender as! UITextField
 
         storeTextValue(tag: textField.tag)
 
     }
     @IBAction func defaultTipTextEditingChanged(_ sender: Any) {
+        
         let textField : UITextField = sender as! UITextField
-
+        
         storeTextValue(tag: textField.tag)
 
     }
     
     
-    
     func storeTextValue(tag:Int)
     {
-        print("storeTextValue function")
-        //print("defaultTaxText \(defaultTaxText.text)")
+        let numFormatter = NumberFormatter() // convert locale specific currency number to number for calculation
 
-
-        if(tag == 1)
+        if(tag == defaultTaxText.tag)
         {
-            defaultTipPercentage = defaultTaxText.text?.replacingOccurrences(of: "%", with: "")
+            
+            let tempPercentText = defaultTaxText.text?.replacingOccurrences(of: "%", with: "")
+            
+            
+            
+            let convertedNum = numFormatter.number(from: tempPercentText!) ?? Float(defaultTipPercentage! as! String)! as NSNumber
+            
+            if(numFormatter.number(from: tempPercentText!) == nil) // invalid number
+            {
+                if(!tempPercentText!.isEmpty)
+                {
+                    defaultTaxText.text = localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
 
-            defaults.set(String(format: "%.2f", Float(defaultTipPercentage as! String)!).appending("%"), forKey: "DEFAULT_TIP_PERCENTAGE" )
+                    defaults.set(defaultTipPercentage as! String, forKey: "DEFAULT_TIP_PERCENTAGE" )
+                    
+                    errorAlertActionWithStyle(msg: "Invalid number")
+                }
+
+            }
+            else {
+                
+                let tipDefault = Double.init(convertedNum)
+                
+                defaults.set(String(format: "%.2f", tipDefault), forKey: "DEFAULT_TIP_PERCENTAGE" )
+                
+            }
             
         }
-        else if(tag == 2)
+        else if(tag == tipMinText.tag)
         {
-            tipMinPercentage = tipMinText.text?.replacingOccurrences(of: "%", with: "")
-            defaults.set(tipMinText.text, forKey: "TIP_MIN_PERCENTAGE" )
+            let tempPercentText = tipMinText.text?.replacingOccurrences(of: "%", with: "")
             
+            let convertedNum = numFormatter.number(from: tempPercentText!) ?? numFormatter.number(from: tipMinPercentage! as! String) //Float(tipMinPercentage! as! String)! as NSNumber
+
+            if(numFormatter.number(from: tempPercentText!) == nil) // invalid number
+            {
+                if(!tempPercentText!.isEmpty)
+                {
+                    tipMinText.endEditing(true)
+
+                    tipMinText.text = (tipMinPercentage as! String).appending("%")
+                    defaults.set(tipMinPercentage as! String, forKey: "TIP_MIN_PERCENTAGE" )
+                    
+                    errorAlertActionWithStyle(msg: "Invalid number")
+                }
+                
+            }
+            else {
+                
+                let tipMin = Double.init(convertedNum!)
+                
+                defaults.set(String(format: "%.2f", tipMin), forKey: "TIP_MIN_PERCENTAGE" )
+                
+            }
+
         }
         else
         {
-            tipMaxPercentage = tipMaxText.text?.replacingOccurrences(of: "%", with: "")
-            defaults.set(tipMaxText.text, forKey: "TIP_MAX_PERCENTAGE" )
+            let tempPercentText = tipMaxText.text?.replacingOccurrences(of: "%", with: "")
             
+            let convertedNum = numFormatter.number(from: tempPercentText!) ?? numFormatter.number(from: tipMinPercentage! as! String) //Float(tipMinPercentage! as! String)! as NSNumber
+
+
+            if(numFormatter.number(from: tempPercentText! ) == nil) // invalid number
+            {
+                if(!tempPercentText!.isEmpty)
+                {
+                    tipMaxText.endEditing(true) //if this is added then, the textbox wont be cleared after message
+                    tipMaxText.text = (tipMaxPercentage as! String).appending("%")
+                    defaults.set(tipMaxPercentage as! String, forKey: "TIP_MAX_PERCENTAGE" )
+                
+                    errorAlertActionWithStyle(msg: "Invalid number")
+                }
+            }
+            else {
+
+                let tipMax = Double.init(convertedNum!)
+
+                defaults.set(String(format: "%.2f", tipMax), forKey: "TIP_MAX_PERCENTAGE" )
+                
+            }
+
         }
         defaults.synchronize()
+
     }
+    
     /*
     // MARK: - Navigation
 
@@ -301,5 +363,52 @@ class SettingsViewController: UIViewController {
         // Pass the selected object to the new view controller.
     }
     */
+    
+    func errorAlertActionWithStyle(msg: String)
+    {
+        let appColor: UIColor = UIColor.init(hue: 0.35, saturation: 0.82, brightness: 0.53, alpha: 1)
+        
+        let attributedTitleString = NSAttributedString(string: "Tip Calculator", attributes: [
+            NSFontAttributeName : UIFont.systemFont(ofSize: 17), //your font here,
+            NSForegroundColorAttributeName : appColor])
+        
+        let attributedMsgString = NSMutableAttributedString(string: "", attributes: [
+            NSFontAttributeName : UIFont.systemFont(ofSize: 15), //your font here,
+            NSForegroundColorAttributeName : appColor])
+        
+        if(msg.isEmpty != true)
+        {
+            let attributedErrMsgString = NSAttributedString(string: "\n".appending(msg), attributes: [
+                NSFontAttributeName : UIFont.systemFont(ofSize: 15), //your font here,
+                NSForegroundColorAttributeName : UIColor.red])
+            attributedMsgString.append(attributedErrMsgString)
+            
+        }
+        
+        let alertController = UIAlertController(title: "", message: "", preferredStyle: .alert)
+        alertController.setValue(attributedTitleString, forKey: "attributedTitle")
+        alertController.setValue(attributedMsgString, forKey: "attributedMessage")
+        
+        
+        let OKAction = UIAlertAction(title: "OK", style: .default) { (action:UIAlertAction!) in
+            print("Pressed OK button");
+        }
+        alertController.addAction(OKAction)
+        
+        present(alertController, animated: true, completion:nil)
+        
+        let subview = alertController.view.subviews.first! as UIView
+        //subview.backgroundColor = UIColor.orange()
+        
+        let alertContentView = subview.subviews.first! as UIView
+        
+        // alertContentView.backgroundColor = UIColor.yellow()
+        alertContentView.layer.cornerRadius = 12
+        alertContentView.layer.borderWidth = 1
+        alertContentView.layer.borderColor = appColor.cgColor
+        
+        alertController.view.tintColor = appColor
+        
+    }
 
 }
