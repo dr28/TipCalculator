@@ -6,6 +6,8 @@
 //  Copyright © 2017 Deepthy. All rights reserved.
 //
 
+import AVFoundation
+
 import UIKit
 
 class ViewController: UIViewController {
@@ -22,10 +24,13 @@ class ViewController: UIViewController {
     @IBOutlet weak var tipLabel: UILabel!
     @IBOutlet weak var totalLabel: UILabel!
     
+    @IBOutlet weak var thumbImg: UIImageView!
     let defaults = UserDefaults.standard
    
     var doNotTipOnTax = 0
     var showSlider = 0
+    var darkTheme = 0
+
     
     var defaultTipPercentage:Any? = nil //Amt without %
 
@@ -34,45 +39,63 @@ class ViewController: UIViewController {
     let localeSpecificFormatter = NumberFormatter()
 
     var localeSpecificCurrencySymbol : String?
+    
+    var appStartTime : NSDate? = nil
+    var inActivityStartTime : Any? = nil
+    
+    var soundPlayer: AVAudioPlayer? = nil
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
         
-        // Do any additional setup after loading the view, typically from a nib.
+        let soundPath = Bundle.main.path(forResource: "ChaChing", ofType: "caf")
+        let soundURL = URL(fileURLWithPath: soundPath!)
+        
+        soundPlayer = try! AVAudioPlayer(contentsOf: soundURL, fileTypeHint: nil)
+        soundPlayer?.prepareToPlay()
         
         // Locale specific currency and thousands separator 
-        localeSpecificFormatter.numberStyle = .currency
+        self.navigationItem.rightBarButtonItem?.title = NSString(string: "\u{2699}\u{0000FE0E}") as String // Gear icon
+        self.navigationItem.title = "Tip Calculator"
+
+        
+        localeSpecificFormatter.numberStyle = .decimal
+        localeSpecificFormatter.minimumFractionDigits = 2
+        localeSpecificFormatter.maximumFractionDigits = 2
         
         localeSpecificCurrencySymbol = (Locale.current as NSLocale).displayName(forKey: .currencySymbol, value: Locale.current.currencyCode as Any)! // .object(forKey: .countryCode)
 
         billText.placeholder = localeSpecificCurrencySymbol
         tipLabel.text = localeSpecificCurrencySymbol
         totalLabel.text = localeSpecificCurrencySymbol
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
+        view.backgroundColor = ThemeManager.currentTheme().backgroundColor
+        separationView.backgroundColor = ThemeManager.currentTheme().mainColor
+        
+        let font = UIFont.systemFont(ofSize: 28) // adjust the size as required
+        var attributes = [NSFontAttributeName : font, NSForegroundColorAttributeName : ThemeManager.currentTheme().mainColor]
+        self.navigationItem.rightBarButtonItem?.setTitleTextAttributes(attributes, for: .normal)
+        
+        attributes = [NSForegroundColorAttributeName : ThemeManager.currentTheme().mainColor]
+        self.navigationController?.navigationBar.titleTextAttributes = attributes
+
         billText.becomeFirstResponder()
 
-        self.navigationItem.rightBarButtonItem?.title = NSString(string: "\u{2699}\u{0000FE0E}") as String // Gear icon
-        let font = UIFont.systemFont(ofSize: 28) // adjust the size as required
-        let attributes = [NSFontAttributeName : font]
-        self.navigationItem.rightBarButtonItem?.setTitleTextAttributes(attributes, for: .normal)
-
         defaultTipPercentage = defaults.object(forKey: "DEFAULT_TIP_PERCENTAGE")
-
+        
         if(defaultTipPercentage == nil)
         {
             defaultTipPercentage = "20.00" as String // First time default
         }
         
-        localeSpecificFormatter.numberStyle = .decimal
-        localeSpecificFormatter.minimumFractionDigits = 2
-        localeSpecificFormatter.maximumFractionDigits = 2
-
+       
         tipPercentageLabel.text = localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
-
         
         doNotTipOnTax = defaults.integer(forKey: "DO_NOT_TIP_0N_TAX")
         
@@ -83,31 +106,40 @@ class ViewController: UIViewController {
             taxText.text = ""
         }
       
+        darkTheme = defaults.integer(forKey: "DARK_THEME")
+
 
         showSlider = defaults.integer(forKey: "SHOW_TIP_SLIDER")
 
         tipSegmentControl.isHidden = (showSlider == 1)
         tipSlider.isHidden = !(showSlider == 1)
+        thumbImg.isHidden = !(showSlider == 1)
 
         
         if(tipSegmentControl.isHidden) // Show slider
-        {
-            separationView.backgroundColor = UIColor.init(hue: 0.35, saturation: 0.82, brightness: 0.53, alpha: 1)
+        {            
+            separationView.isHidden = false
             
             let tipMinPercentage = defaults.object(forKey: "TIP_MIN_PERCENTAGE")
             
             tipSlider.minimumValue = Float(tipMinPercentage as! String)!
-            
+
             let tipMaxPercentage = defaults.object(forKey: "TIP_MAX_PERCENTAGE")
 
             tipSlider.maximumValue = Float(tipMaxPercentage as! String)!
             
             tipSlider.value = Float(defaultTipPercentage as! String)!
+            
+            thumbImg.image = thumbImg.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate)
+            
+            thumbImg.transform = CGAffineTransform(rotationAngle: (CGFloat((((90/(tipSlider.maximumValue - tipSlider.minimumValue))*(tipSlider.value - tipSlider.minimumValue))*(0.0174))-(90*0.0174))))
+
+            
         }
         else { // Show segmented control
             
-            separationView.backgroundColor = UIColor.clear
-            
+            separationView.isHidden = true
+
             let offset : Float = 5
 
             let tipMinPercentage = String(format: "%.2f", Float(defaultTipPercentage as! String)! - offset)
@@ -134,12 +166,6 @@ class ViewController: UIViewController {
         }
 
     }
-    
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
 
     @IBAction func onTap(_ sender: Any) {
         
@@ -149,7 +175,24 @@ class ViewController: UIViewController {
     
     @IBAction func calculateTax(_ sender: Any) {
         
-        calculateTax()
+        if(NumberFormatter().number(from: billText.text!) == nil) // invalid number
+        {
+            if(!(billText.text?.isEmpty)!)
+            {
+                let errMsg = "Not a valid number"
+                errorAlertActionWithStyle(msg: errMsg)
+                billText.text = ""
+
+            }
+            
+            tipLabel.text = localeSpecificCurrencySymbol
+            totalLabel.text = localeSpecificCurrencySymbol
+            
+        }
+        else{
+
+            calculateTax()
+        }
         
     }
     
@@ -161,6 +204,9 @@ class ViewController: UIViewController {
         var convertedNum = numFormatter.number(from: billText.text!) ?? 0
 
         let bill = Double.init(convertedNum)
+        
+        if(bill != 0)
+        {
 
         var tax = 0.0
 
@@ -183,27 +229,102 @@ class ViewController: UIViewController {
         tipLabel.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: tip as NSNumber)!)
 
         totalLabel.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: total as NSNumber)!)
-        
+        }
     }
     
     @IBAction func deductTaxFromBill(_ sender: Any) {
+        
+        let numFormatter = NumberFormatter()
+        let tempPercentText = taxText.text
+
+        
+        if(!(taxText.text?.isEmpty)! && numFormatter.number(from: tempPercentText!) == nil) // invalid number
+        {
+            if(numFormatter.number(from: tempPercentText!) != 0)
+            {
+                let errMsg = "Not a valid number"
+                errorAlertActionWithStyle(msg: errMsg)
+                taxText.text = ""
+
+            }
+            
+        }
+        
         calculateTax()
     }
 
     
     
     @IBAction func onSliderValueChanged(_ sender: Any) {
-        
+
         tipPercentageLabel.text = localeSpecificFormatter.string(from: tipSlider.value as NSNumber)!.appending("%") // Locale specific display
-
+        rotateImg()
         calculateTax()
-
+        
     }
     
     @IBAction func tipSegmentControlValueChanged(_ sender: Any) {
         
         tipPercentageLabel.text = tipPercentage?[tipSegmentControl.selectedSegmentIndex]
         calculateTax()
+        
+        if(!(billText.text?.isEmpty)!)
+        {
+            soundPlayer?.play()
+        }
+
+        
+    }
+    
+    func rotateImg()
+    {
+        thumbImg.transform = CGAffineTransform(rotationAngle: (CGFloat((((90/(tipSlider.maximumValue - tipSlider.minimumValue))*(tipSlider.value - tipSlider.minimumValue))*(0.0174))-(90*0.0174))))
+
+    }
+    
+    func errorAlertActionWithStyle(msg: String)
+    {
+        let attributedTitleString = NSAttributedString(string: "Tip Calculator", attributes: [
+            NSFontAttributeName : UIFont.systemFont(ofSize: 17), //your font here,
+            NSForegroundColorAttributeName : ThemeManager.currentTheme().mainColor])
+        
+        let attributedMsgString = NSMutableAttributedString(string: "", attributes: [
+            NSFontAttributeName : UIFont.systemFont(ofSize: 15), //your font here,
+            NSForegroundColorAttributeName : ThemeManager.currentTheme().mainColor])
+        
+        if(msg.isEmpty != true)
+        {
+            let attributedErrMsgString = NSAttributedString(string: "\n".appending(msg), attributes: [
+                NSFontAttributeName : UIFont.systemFont(ofSize: 15), //your font here,
+                NSForegroundColorAttributeName : UIColor.red])
+            attributedMsgString.append(attributedErrMsgString)
+            
+        }
+        
+        let alertController = UIAlertController(title: "", message: "", preferredStyle: .alert)
+        alertController.setValue(attributedTitleString, forKey: "attributedTitle")
+        alertController.setValue(attributedMsgString, forKey: "attributedMessage")
+        
+        let subview = alertController.view.subviews.first! as UIView
+        //subview.backgroundColor = UIColor.orange()
+        
+        let alertContentView = subview.subviews.first! as UIView
+        
+        //alertContentView.backgroundColor = ThemeManager.currentTheme().secondaryColor
+        alertContentView.layer.cornerRadius = 12
+        alertContentView.layer.borderWidth = 1
+        alertContentView.layer.borderColor = ThemeManager.currentTheme().mainColor.cgColor
+        
+        alertController.view.tintColor = ThemeManager.currentTheme().mainColor
+        
+        let OKAction = UIAlertAction(title: "OK", style: .default) { (action:UIAlertAction!) in
+            print("Pressed OK button");
+        }
+        alertController.addAction(OKAction)
+
+        present(alertController, animated: true, completion:nil)
+        
+        
         
     }
 
