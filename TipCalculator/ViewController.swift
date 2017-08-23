@@ -13,6 +13,7 @@ import UIKit
 class ViewController: UIViewController {
 
     @IBOutlet weak var separationView: UIView!
+    @IBOutlet weak var seperationView2: UIView!
     
     @IBOutlet weak var tipSegmentControl: UISegmentedControl!
     @IBOutlet weak var tipSlider: UISlider!
@@ -24,14 +25,30 @@ class ViewController: UIViewController {
     @IBOutlet weak var tipLabel: UILabel!
     @IBOutlet weak var totalLabel: UILabel!
     
+    @IBOutlet weak var noOfPeople: UIStepper!
+    
+    @IBOutlet weak var noPeopleLabel: UILabel!
+    @IBOutlet weak var totalPerPerson: CountingLabel!
+    @IBOutlet weak var tipPerPerson: CountingLabel!
+    
     @IBOutlet weak var thumbImg: UIImageView!
+    
+    @IBOutlet weak var tipTextLabel: UILabel!
+    @IBOutlet weak var totalTextLabel: UILabel!
+    @IBOutlet weak var noOfPeopleTextLabel: UILabel!
+    @IBOutlet weak var tipPerPersonTextLabel: UILabel!
+    @IBOutlet weak var totalPerPersonTextLabel: UILabel!
+    @IBOutlet weak var RoundedText: UILabel!
+    @IBOutlet weak var RoundedTipText: UILabel!
+    
     let defaults = UserDefaults.standard
    
     var doNotTipOnTax = 0
     var showSlider = 0
     var darkTheme = 0
+    var roundTotal = 0
+    var roundTip = 0
 
-    
     var defaultTipPercentage:Any? = nil //Amt without %
 
     var tipPercentage: [String]? = nil //[0.18,0.2,0.25]
@@ -53,7 +70,7 @@ class ViewController: UIViewController {
         let soundURL = URL(fileURLWithPath: soundPath!)
         
         soundPlayer = try! AVAudioPlayer(contentsOf: soundURL, fileTypeHint: nil)
-        soundPlayer?.prepareToPlay()
+      //  soundPlayer?.prepareToPlay()
         
         // Locale specific currency and thousands separator 
         self.navigationItem.rightBarButtonItem?.title = NSString(string: "\u{2699}\u{0000FE0E}") as String // Gear icon
@@ -67,16 +84,32 @@ class ViewController: UIViewController {
         localeSpecificCurrencySymbol = (Locale.current as NSLocale).displayName(forKey: .currencySymbol, value: Locale.current.currencyCode as Any)! // .object(forKey: .countryCode)
 
         billText.placeholder = localeSpecificCurrencySymbol
-        tipLabel.text = localeSpecificCurrencySymbol
-        totalLabel.text = localeSpecificCurrencySymbol
+        tipLabel.text = localeSpecificCurrencySymbol?.appending("0.00")
+        totalLabel.text = localeSpecificCurrencySymbol?.appending("0.00")
+        totalPerPerson.text = localeSpecificCurrencySymbol?.appending("0.00")
+        tipPerPerson.text = localeSpecificCurrencySymbol?.appending("0.00")
+        
+        noOfPeople.maximumValue = 100
+        noOfPeople.minimumValue = 1
+      //  noOfPeople.wraps = true
         
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        
-        view.backgroundColor = ThemeManager.currentTheme().backgroundColor
-        separationView.backgroundColor = ThemeManager.currentTheme().mainColor
+        self.view.backgroundColor = ThemeManager.currentTheme().backgroundColor
+
+        self.separationView.backgroundColor = ThemeManager.currentTheme().mainColor.withAlphaComponent(0.6)
+        self.seperationView2.backgroundColor = ThemeManager.currentTheme().mainColor.withAlphaComponent(0.6)
+
+        tipPercentageLabel.backgroundColor  = ThemeManager.currentTheme().secondaryColor
+        tipTextLabel.backgroundColor  = ThemeManager.currentTheme().secondaryColor
+        totalTextLabel.backgroundColor  = ThemeManager.currentTheme().secondaryColor
+        noOfPeopleTextLabel.backgroundColor  = ThemeManager.currentTheme().secondaryColor
+        tipPerPersonTextLabel.backgroundColor  = ThemeManager.currentTheme().secondaryColor
+        totalPerPersonTextLabel.backgroundColor  = ThemeManager.currentTheme().secondaryColor
+        RoundedText.backgroundColor  = ThemeManager.currentTheme().secondaryColor
+        RoundedTipText.backgroundColor  = ThemeManager.currentTheme().secondaryColor
         
         let font = UIFont.systemFont(ofSize: 28) // adjust the size as required
         var attributes = [NSFontAttributeName : font, NSForegroundColorAttributeName : ThemeManager.currentTheme().mainColor]
@@ -100,7 +133,7 @@ class ViewController: UIViewController {
         doNotTipOnTax = defaults.integer(forKey: "DO_NOT_TIP_0N_TAX")
         
         taxText.isHidden = (doNotTipOnTax == 0)
-
+        
         if(taxText.isHidden)
         {
             taxText.text = ""
@@ -108,6 +141,13 @@ class ViewController: UIViewController {
       
         darkTheme = defaults.integer(forKey: "DARK_THEME")
 
+        roundTotal = defaults.integer(forKey: "ROUND_TOTAL")
+
+        RoundedText.isHidden = (roundTotal == 0)
+        
+        roundTip = defaults.integer(forKey: "ROUND_TIP")
+        
+        RoundedTipText.isHidden = (roundTip == 0)
 
         showSlider = defaults.integer(forKey: "SHOW_TIP_SLIDER")
 
@@ -174,9 +214,10 @@ class ViewController: UIViewController {
     }
     
     @IBAction func calculateTax(_ sender: Any) {
-        
+
         if(NumberFormatter().number(from: billText.text!) == nil) // invalid number
         {
+            print("\(NumberFormatter().number(from: billText.text!))")
             if(!(billText.text?.isEmpty)!)
             {
                 let errMsg = "Not a valid number"
@@ -185,13 +226,44 @@ class ViewController: UIViewController {
 
             }
             
-            tipLabel.text = localeSpecificCurrencySymbol
-            totalLabel.text = localeSpecificCurrencySymbol
+            tipLabel.text = localeSpecificCurrencySymbol?.appending("0.00")
+            totalLabel.text = localeSpecificCurrencySymbol?.appending("0.00")
             
+            totalPerPerson.timer?.invalidate()
+            tipPerPerson.timer?.invalidate()
+
+            totalPerPerson.text = localeSpecificCurrencySymbol?.appending("0.00")
+            tipPerPerson.text = localeSpecificCurrencySymbol?.appending("0.00")
+
         }
         else{
+            //var calculate = true
 
-            calculateTax()
+           /* if(doNotTipOnTax == 1 && !(taxText.text?.isEmpty)! && NumberFormatter().number(from: taxText.text!) != nil)
+            {
+                if( (NumberFormatter().number(from: billText.text!) as! Double ) < (NumberFormatter().number(from: taxText.text!)as! Double))
+                {
+                    calculate = false
+                }
+
+            }
+            
+            if(calculate)
+            {*/
+                calculateTax()
+
+            /*}
+            else{
+                tipLabel.text = localeSpecificCurrencySymbol?.appending("0.00")
+                totalLabel.text = localeSpecificCurrencySymbol?.appending("0.00")
+                print("totalPerPerson \(totalPerPerson.text)")
+                totalPerPerson.text = localeSpecificCurrencySymbol?.appending("0.00")
+                
+                tipPerPerson.text = localeSpecificCurrencySymbol?.appending("0.00")
+                print("tipPerPerson \(tipPerPerson.text)")
+
+            }*/
+
         }
         
     }
@@ -208,28 +280,60 @@ class ViewController: UIViewController {
         if(bill != 0)
         {
 
-        var tax = 0.0
+            var tax = 0.0
 
-        convertedNum = numFormatter.number(from: (tipPercentageLabel.text?.replacingOccurrences(of: "%", with: ""))!) ?? 0
+            convertedNum = numFormatter.number(from: (tipPercentageLabel.text?.replacingOccurrences(of: "%", with: ""))!) ?? 0
         
-        let tipPercentage = Double.init(convertedNum)
+            let tipPercentage = Double.init(convertedNum)
         
-        if(doNotTipOnTax == 1 && !(taxText.text?.isEmpty)!)
-        {
-            convertedNum = numFormatter.number(from: taxText.text!) ?? 0
+            if(doNotTipOnTax == 1 && !(taxText.text?.isEmpty)!)
+            {
+                convertedNum = numFormatter.number(from: taxText.text!) ?? 0
             
-            tax = Double.init(convertedNum)
+                tax = Double.init(convertedNum)
+
+            }
+        
+            
+            var tip =  (bill - tax) * tipPercentage / 100
+        
+            print("tip  b4 rounded  \tip")
+
+            if(roundTip == 1)
+            {
+                tip = rounded(no: tip, toPlaces: 0)
+                print("tip rounded  \(tip)")
+                
+            }
+        
+            var total = bill +  tip
+            
+            print("total  b4 rounded  \(total)")
+
+            if(roundTotal == 1)
+            {
+           
+                total = rounded(no: total, toPlaces: 0)
+        
+                print("total rounded  \(total)")
+
+            }
+        
+
+            tipLabel.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: tip as NSNumber)!)
+
+            totalLabel.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: total as NSNumber)!)
+            
+            calculateTotalPerPerson()
+            calculateTipPerPerson()
+            print("total \(total)")
 
         }
-        
-        let tip =  (bill - tax) * tipPercentage / 100
-        
-        let total = bill +  tip
-
-        tipLabel.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: tip as NSNumber)!)
-
-        totalLabel.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: total as NSNumber)!)
-        }
+    }
+    
+    func rounded(no : Double, toPlaces places:Int) -> Double {
+        let divisor = pow(10.0, Double(places))
+        return (no * divisor).rounded() / divisor
     }
     
     @IBAction func deductTaxFromBill(_ sender: Any) {
@@ -326,6 +430,82 @@ class ViewController: UIViewController {
         
         
         
+    }
+    
+    func calculateTotalPerPerson()
+    {
+
+        var totalBill = totalLabel.text?.replacingOccurrences(of: localeSpecificCurrencySymbol!, with: "")
+        
+        totalBill = totalBill?.replacingOccurrences(of: localeSpecificFormatter.currencyGroupingSeparator!, with: "")
+        
+        if(!(totalBill?.isEmpty)! )
+        {
+            let nPeople = NumberFormatter().number(from: noPeopleLabel.text!)
+
+            let tBill = NumberFormatter().number(from: totalBill!)
+            
+            let billPerPerson = Double(tBill!).divided(by: nPeople as! Double)
+
+            // totalPerPerson.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: bilPerPerson as NSNumber)!)
+            totalPerPerson.countFromExistingValue(to: Float(billPerPerson))
+
+            
+            /* print("totalLabel.text \(totalLabel.text)")
+             print("totalLabel.text \((totalLabel.text!).replacingOccurrences(of: localeSpecificCurrencySymbol!, with: ""))")
+             
+             var t = (totalLabel.text!).replacingOccurrences(of: localeSpecificCurrencySymbol!, with: "")
+             print("localeSpecificFormatter.currencyGroupingSeparator! \(localeSpecificFormatter.currencyGroupingSeparator!)")
+             
+             t = t.replacingOccurrences(of: localeSpecificFormatter.currencyGroupingSeparator!, with: "")
+             print("t \(t)")
+             
+             if(!t.isEmpty )
+             {
+             let g = NumberFormatter().number(from: t)
+             print("g \(g)")
+             
+             // totalLabel.count(from: (g?.floatValue)!, to: Float(total), duration: 0)
+             totalLabel.countFromCurrent(to: Float(total))
+             
+             }
+             else{
+             //totalLabel.count(from: 0, to: Float(total), duration: 0)
+             totalLabel.countFromCurrent(to: Float(total))
+             
+             
+             }*/
+        }
+
+    }
+    
+    func calculateTipPerPerson()
+    {
+        
+        var tip = tipLabel.text?.replacingOccurrences(of: localeSpecificCurrencySymbol!, with: "")
+        
+        tip = tip?.replacingOccurrences(of: localeSpecificFormatter.currencyGroupingSeparator!, with: "")
+        
+        if(!(tip?.isEmpty)! )
+        {
+            let nPeople = NumberFormatter().number(from: noPeopleLabel.text!)
+            
+            let ntip = NumberFormatter().number(from: tip!)
+            
+            let ntipPerPerson = Double(ntip!).divided(by: nPeople as! Double)
+           // tipPerPerson.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: ntipPerPerson as NSNumber)!)
+            
+            tipPerPerson.countFromExistingValue(to: Float(ntipPerPerson))//.countFromExistingValue(to: Float(ntipPerPerson))
+            
+        }
+        
+    }
+
+
+    @IBAction func updateNoOfPeople(_ sender: Any) {
+        noPeopleLabel.text = String.init(Int.init((sender as! UIStepper).value))
+        calculateTotalPerPerson()
+        calculateTipPerPerson()
     }
 
 }

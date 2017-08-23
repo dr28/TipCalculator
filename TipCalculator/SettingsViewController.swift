@@ -9,6 +9,8 @@
 import UIKit
 
 class SettingsViewController: UIViewController {
+    
+    @IBOutlet weak var separationView: UIView!
 
     @IBOutlet weak var doNotTipOnTax: UISwitch!
     @IBOutlet weak var defaultTaxText: UITextField!
@@ -22,8 +24,13 @@ class SettingsViewController: UIViewController {
     @IBOutlet weak var tipMaxLabel: UILabel!
     @IBOutlet weak var tipMaxText: UITextField!
     
-    @IBOutlet weak var themeSelector: UISwitch!
+    @IBOutlet weak var roundTotal: UISwitch!
+
+    @IBOutlet weak var roundTip: UISwitch!
     
+    @IBOutlet weak var themeSelector: UISegmentedControl!
+    
+
     let defaults = UserDefaults.standard
     
     var defaultTipPercentage:Any? = nil
@@ -41,40 +48,9 @@ class SettingsViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-       // self.view.backgroundColor = ThemeManager.currentTheme().backgroundColor
-        
-        UIView.animate(withDuration: 1, animations: {
-            self.view.backgroundColor = ThemeManager.currentTheme().backgroundColor
-        }, completion: nil)
-        
-        self.view.subviews.forEach { (view) in
-            if(view.isKind(of: UILabel.self))
-            {
-                let label : UILabel = view as! UILabel
+        self.view.backgroundColor = ThemeManager.currentTheme().backgroundColor
+        self.separationView.backgroundColor = ThemeManager.currentTheme().secondaryColor
 
-                label.textColor = ThemeManager.currentTheme().mainColor
-
-            }
-            else if(view.isKind(of: UITextField.self))
-            {
-                let textfield : UITextField = view as! UITextField
-                textfield.textColor = ThemeManager.currentTheme().mainColor
-                
-            }
-            else
-            {
-                if(view.isKind(of: UISwitch.self))
-                {
-                    let allSwitch : UISwitch = view as! UISwitch
-                    allSwitch.thumbTintColor = ThemeManager.currentTheme().mainColor
-                    allSwitch.onTintColor = ThemeManager.currentTheme().mainColor.withAlphaComponent(0.3)
-
-                }
-            }
-
-        }
-        
-        
         defaultTaxText.tag = 1
         tipMinText.tag = 2
         tipMaxText.tag = 3
@@ -122,12 +98,46 @@ class SettingsViewController: UIViewController {
         tipMinText.isHidden = (defaults.integer(forKey: "SHOW_TIP_SLIDER") == 0)//true
         tipMaxLabel.isHidden = (defaults.integer(forKey: "SHOW_TIP_SLIDER") == 0)//true
         tipMaxText.isHidden = (defaults.integer(forKey: "SHOW_TIP_SLIDER") == 0)//true
+        
+        roundTotal.tag = 3
+        
+        roundTotal.isOn = !(defaults.integer(forKey: "ROUND_TOTAL") == 0)
+        
+        roundTip.tag = 4
+        
+        roundTip.isOn = !(defaults.integer(forKey: "ROUND_TIP") == 0)
+        
+        themeSelector.selectedSegmentIndex = defaults.integer(forKey: "DARK_THEME")
+
+        
+        self.view.subviews.forEach { (view) in
+            if(view.isKind(of: UILabel.self))
+            {
+                let label : UILabel = view as! UILabel
                 
-        themeSelector.tag = 3
-        
-        themeSelector.isOn = !(defaults.integer(forKey: "DARK_THEME") == 0)
-        
-        
+                label.textColor = ThemeManager.currentTheme().mainColor
+                
+            }
+            else if(view.isKind(of: UITextField.self))
+            {
+                let textfield : UITextField = view as! UITextField
+                textfield.textColor = ThemeManager.currentTheme().mainColor
+                
+            }
+            else
+            {
+                if(view.isKind(of: UISwitch.self))
+                {
+                    let allSwitch : UISwitch = view as! UISwitch
+                    allSwitch.thumbTintColor = ThemeManager.currentTheme().mainColor
+                    allSwitch.onTintColor = ThemeManager.currentTheme().mainColor.withAlphaComponent(0.3)
+                }
+                
+            }
+                    
+        }
+
+
     }
 
     
@@ -292,7 +302,7 @@ class SettingsViewController: UIViewController {
             }
             
             defaults.set(tipOnTaxValue, forKey: "DO_NOT_TIP_0N_TAX")
-            defaults.synchronize()
+
         }
         else if(uiSwitch.tag == 2)
         {
@@ -326,22 +336,33 @@ class SettingsViewController: UIViewController {
 
             }
             defaults.set(showSlider, forKey: "SHOW_TIP_SLIDER")
-            defaults.synchronize()
         }
-        else{
-            var darkTheme = 0
+        else if (uiSwitch.tag == 3) {
             
-            if(themeSelector.isOn)
+            var round = 0
+            
+            if(roundTotal.isOn)
             {
-                darkTheme = 1
+                round = 1
             }
             
-            defaults.set(darkTheme, forKey: "DARK_THEME")
-            defaults.synchronize()
+            defaults.set(round, forKey: "ROUND_TOTAL")
             
-            self.viewWillAppear(false)
-
         }
+        else {
+            
+            var round = 0
+            
+            if(roundTip.isOn)
+            {
+                round = 1
+            }
+            
+            defaults.set(round, forKey: "ROUND_TIP")
+            
+        }
+        defaults.synchronize()
+
     }
     
     @IBAction func minTipTextEditingChanged(_ sender: Any) {
@@ -376,8 +397,6 @@ class SettingsViewController: UIViewController {
         {
             
             let tempPercentText = defaultTaxText.text?.replacingOccurrences(of: "%", with: "")
-            
-            
             
             let convertedNum = numFormatter.number(from: tempPercentText!) ?? Float(defaultTipPercentage! as! String)! as NSNumber
             
@@ -515,13 +534,33 @@ class SettingsViewController: UIViewController {
     
     @IBAction func applyTheme(_ sender: Any) {
         
-        if let selectedTheme = Theme(rawValue: themeSelector.isOn.hashValue) {
+        if let selectedTheme = Theme(rawValue: themeSelector.selectedSegmentIndex) {
             ThemeManager.applyTheme(theme: selectedTheme)
+            
+            defaults.set(themeSelector.selectedSegmentIndex, forKey: "DARK_THEME")
+            defaults.synchronize()
+                        
+            for i in 0..<(sender as! UISegmentedControl).subviews.count {
+                
+                (sender as! UISegmentedControl).subviews[i].tintColor = ThemeManager.currentTheme().mainColor
+                (sender as! UISegmentedControl).subviews[i].backgroundColor = ThemeManager.currentTheme().backgroundColor
+               
+                (sender as! UISegmentedControl).setDividerImage(UIImage.init(), forLeftSegmentState: .normal, rightSegmentState: .normal, barMetrics: .default)
+                
+            }
+            
+           
+            UIView.animate(withDuration: 1, animations: {
+                self.view.backgroundColor = ThemeManager.currentTheme().backgroundColor
+                self.separationView.backgroundColor = ThemeManager.currentTheme().secondaryColor
+            }, completion: nil)
+            
 
+            self.viewWillAppear(true)
         }
 
+        
     }
-    
    
     
 

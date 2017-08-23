@@ -27,6 +27,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let theme = ThemeManager.currentTheme()
         ThemeManager.applyTheme(theme: theme)
         
+        
         return true
     }
 
@@ -68,7 +69,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         if (inActivityStartTime != nil) {
             
-            trackTime(appStart: appStartTime, inactivityStart: inActivityStartTime as! NSDate)
+            trackTime(appStart: appStartTime, inactivityStart: inActivityStartTime as? NSDate)
         }
         
         

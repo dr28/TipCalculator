@@ -18,7 +18,8 @@ enum Theme: Int {
             return UIColor(red: 24.0/255.0, green: 135.0/255.0, blue: 39.0/255.0, alpha: 1.0) // green
             // return UIColor(red: 87.0/255.0, green: 188.0/255.0, blue: 95.0/255.0, alpha: 1.0)
         case .Dark:
-            return UIColor(red: 242.0/255.0, green: 101.0/255.0, blue: 34.0/255.0, alpha: 1.0) //orange /*UIColor(white: 0.9, alpha: 1.0)*/
+            return UIColor(red: 242.0/255.0, green: 101.0/255.0, blue: 34.0/255.0, alpha: 1.0) //0.094, 0.396, 0.133 //orange
+            /*UIColor(white: 0.9, alpha: 1.0)*/
         }
     }
     
@@ -29,7 +30,7 @@ enum Theme: Int {
 
             //return UIColor(white: 0.9, alpha: 1.0)
         case .Dark:
-            return UIColor(red: 10.0/255.0, green: 10.0/255.0, blue: 10.0/255.0, alpha: 1.0)
+            return UIColor(red: 10.0/255.0, green: 10.0/255.0, blue: 10.0/255.0, alpha: 1.0) //0.039, 0.039, 0.039
             //return UIColor.black//UIColor(white: 0.8, alpha: 1.0)
         }
     }
@@ -46,9 +47,13 @@ enum Theme: Int {
     var secondaryColor: UIColor {
         switch self {
         case .Default:
-            return UIColor(red: 242.0/255.0, green: 101.0/255.0, blue: 34.0/255.0, alpha: 1.0)
+            return UIColor(red: 186.0/255.0, green: 255.0/255.0, blue: 151.0/255.0, alpha: 1.0)
+
+            //return UIColor(red: 242.0/255.0, green: 101.0/255.0, blue: 34.0/255.0, alpha: 1.0)
         case .Dark:
-            return UIColor(red: 34.0/255.0, green: 128.0/255.0, blue: 66.0/255.0, alpha: 1.0)
+            return UIColor(red: 197.0/255.0, green: 190.0/255.0, blue: 185.0/255.0, alpha: 1.0).withAlphaComponent(0.2)
+
+            //return UIColor(red: 34.0/255.0, green: 128.0/255.0, blue: 66.0/255.0, alpha: 1.0)
             //return UIColor(red: 140.0/255.0, green: 50.0/255.0, blue: 48.0/255.0, alpha: 1.0)
         }
     }
@@ -74,10 +79,48 @@ struct ThemeManager {
         let sharedApplication = UIApplication.shared
         sharedApplication.delegate?.window??.tintColor = theme.mainColor
         
-        //UINavigationBar.appearance().barStyle = theme.barStyle
+        //sharedApplication.keyWindow?.tintColor = theme.mainColor
         
+        //  UIStepper
+        
+        UIStepper.appearance().tintColor = theme.backgroundColor
+
+        let incrementImageFromFile :UIImage = UIImage.init(named: "Up")!
+        let incImgView = UIImageView.init(image: incrementImageFromFile.withRenderingMode(UIImageRenderingMode.alwaysTemplate))
+        
+        let derementImageFromFile :UIImage = UIImage.init(named: "Down")!
+        let decImgView = UIImageView.init(image: derementImageFromFile.withRenderingMode(UIImageRenderingMode.alwaysTemplate))
+        
+        UIImageView.appearance().tintColor = ThemeManager.currentTheme().mainColor
+
+        UIStepper.appearance().setIncrementImage(incImgView.image, for: .normal)
+        UIStepper.appearance().setDecrementImage(decImgView.image, for: .normal)
+
+        UIStepper.appearance().setBackgroundImage(UIImage.init(), for : .normal)
+        UIStepper.appearance().setBackgroundImage(UIImage.init(), for : .highlighted)
+        UIStepper.appearance().setDividerImage(UIImage.init(), forLeftSegmentState : .normal, rightSegmentState : .normal)
+
         UITextField.appearance().textColor = theme.mainColor//.withAlphaComponent(0.3)
 
+        UILabel.appearance().textColor = theme.mainColor
+
+        //  UISlider
+
+        UISlider.appearance().minimumTrackTintColor = theme.mainColor.withAlphaComponent(0.3)
+        UISlider.appearance().maximumTrackTintColor = theme.secondaryColor//.withAlphaComponent(0.3)
+
+        UISlider.appearance().thumbTintColor = theme.mainColor
+        UISlider.appearance().minimumValueImage = (UIImage(named: "Dollar")?.withRenderingMode(UIImageRenderingMode.alwaysTemplate))
+        UISlider.appearance().maximumValueImage = (UIImage(named: "Dollars")?.withRenderingMode(UIImageRenderingMode.alwaysTemplate))
+        UISlider.appearance().tintColor = theme.mainColor
+
+
+        //UISegmentedControl.appearance().tintColor = theme.mainColor//.withAlphaComponent(0.3)
+        //UISegmentedControl.appearance().backgroundColor = theme.backgroundColor
+        //UINavigationBar.appearance().barStyle = theme.barStyle
+        /*
+        UITextField.appearance().textColor = theme.mainColor//.withAlphaComponent(0.3)
+*/
         //let font = UIFont.systemFont(ofSize: 28) // adjust the size as required
         //let attributes = [NSFontAttributeName : font, NSForegroundColorAttributeName : theme.mainColor]
         //UIBarItem.appearance().setTitleTextAttributes(attributes, for: .normal)
@@ -95,7 +138,7 @@ struct ThemeManager {
         
         //UIBarButtonItem.appearance().setTitleTextAttributes(fontAttributes, for: .normal)
         
-        UILabel.appearance().textColor = theme.mainColor//.withAlphaComponent(0.1)
+        /*UILabel.appearance().textColor = theme.mainColor//.withAlphaComponent(0.1)
         UILabel.appearance(whenContainedInInstancesOf: [UIView.self]).tintColor = ThemeManager.currentTheme().mainColor
 
         UIImageView.appearance().tintColor = theme.mainColor
@@ -113,11 +156,12 @@ struct ThemeManager {
         UISlider.appearance().maximumValueImage = (UIImage(named: "Dollars")?.withRenderingMode(UIImageRenderingMode.alwaysTemplate))
         UISlider.appearance().tintColor = theme.mainColor
 
+        UIStepper.appearance().tintColor = theme.backgroundColor
 
         UISegmentedControl.appearance().tintColor = theme.mainColor//.withAlphaComponent(0.3)
         
         UISegmentedControl.appearance().backgroundColor = theme.backgroundColor//.withAlphaComponent(0.3)
 
-        UISwitch.appearance().thumbTintColor = theme.mainColor        
+        UISwitch.appearance().thumbTintColor = theme.mainColor     */
     }
 }
