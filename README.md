@@ -30,17 +30,14 @@ The following **additional** features are implemented:
 - [x] The state cleared after 10 minutes of inactivity
 - [x] Added light/dark color theme.
 - [x] Validation for invalid number entry and for setting minimum and maximum percentage.
-
-
+- [x] Added option to round the tip and total value.
+- [x] Added option to enter number of persons and to calculate tip and total per person.
 
 ## Video Walkthrough 
 
 Here's a walkthrough of implemented user stories:
 
 <img src='https://github.com/dr28/TipCalculator/blob/master/TipCalculatorDemo.gif' title='Video Walkthrough' width='' alt='Video Walkthrough' />
-
-<img src='https://github.com/dr28/TipCalculator/blob/master/tipCalculatorDemo_1.gif' title='Video Walkthrough' width='' alt='Video Walkthrough' />
-
 
 GIF created with [LiceCap](http://www.cockos.com/licecap/).
 
