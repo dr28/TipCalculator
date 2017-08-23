@@ -99,8 +99,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             viewController.billText.text = ""
             viewController.taxText.text = ""
             
-            viewController.tipLabel.text = viewController.localeSpecificCurrencySymbol
-            viewController.totalLabel.text = viewController.localeSpecificCurrencySymbol
+            viewController.tipLabel.text = viewController.localeSpecificCurrencySymbol?.appending("0.00")
+            viewController.totalLabel.text = viewController.localeSpecificCurrencySymbol?.appending("0.00")
+            viewController.totalPerPerson.text = viewController.localeSpecificCurrencySymbol?.appending("0.00")
+            viewController.tipPerPerson.text = viewController.localeSpecificCurrencySymbol?.appending("0.00")
+            
 
             //UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
 
