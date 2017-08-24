@@ -70,7 +70,6 @@ class ViewController: UIViewController {
         let soundURL = URL(fileURLWithPath: soundPath!)
         
         soundPlayer = try! AVAudioPlayer(contentsOf: soundURL, fileTypeHint: nil)
-      //  soundPlayer?.prepareToPlay()
         
         // Locale specific currency and thousands separator 
         self.navigationItem.rightBarButtonItem?.title = NSString(string: "\u{2699}\u{0000FE0E}") as String // Gear icon
@@ -91,7 +90,6 @@ class ViewController: UIViewController {
         
         noOfPeople.maximumValue = 100
         noOfPeople.minimumValue = 1
-      //  noOfPeople.wraps = true
         
     }
     
@@ -237,32 +235,8 @@ class ViewController: UIViewController {
 
         }
         else{
-            //var calculate = true
-
-           /* if(doNotTipOnTax == 1 && !(taxText.text?.isEmpty)! && NumberFormatter().number(from: taxText.text!) != nil)
-            {
-                if( (NumberFormatter().number(from: billText.text!) as! Double ) < (NumberFormatter().number(from: taxText.text!)as! Double))
-                {
-                    calculate = false
-                }
-
-            }
             
-            if(calculate)
-            {*/
-                calculateTax()
-
-            /*}
-            else{
-                tipLabel.text = localeSpecificCurrencySymbol?.appending("0.00")
-                totalLabel.text = localeSpecificCurrencySymbol?.appending("0.00")
-                print("totalPerPerson \(totalPerPerson.text)")
-                totalPerPerson.text = localeSpecificCurrencySymbol?.appending("0.00")
-                
-                tipPerPerson.text = localeSpecificCurrencySymbol?.appending("0.00")
-                print("tipPerPerson \(tipPerPerson.text)")
-
-            }*/
+            calculateTax()
 
         }
         
@@ -318,7 +292,6 @@ class ViewController: UIViewController {
                 print("total rounded  \(total)")
 
             }
-        
 
             tipLabel.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: tip as NSNumber)!)
 
@@ -410,11 +383,9 @@ class ViewController: UIViewController {
         alertController.setValue(attributedMsgString, forKey: "attributedMessage")
         
         let subview = alertController.view.subviews.first! as UIView
-        //subview.backgroundColor = UIColor.orange()
         
         let alertContentView = subview.subviews.first! as UIView
         
-        //alertContentView.backgroundColor = ThemeManager.currentTheme().secondaryColor
         alertContentView.layer.cornerRadius = 12
         alertContentView.layer.borderWidth = 1
         alertContentView.layer.borderColor = ThemeManager.currentTheme().mainColor.cgColor
@@ -447,34 +418,8 @@ class ViewController: UIViewController {
             
             let billPerPerson = Double(tBill!).divided(by: nPeople as! Double)
 
-            // totalPerPerson.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: bilPerPerson as NSNumber)!)
             totalPerPerson.countFromExistingValue(to: Float(billPerPerson))
 
-            
-            /* print("totalLabel.text \(totalLabel.text)")
-             print("totalLabel.text \((totalLabel.text!).replacingOccurrences(of: localeSpecificCurrencySymbol!, with: ""))")
-             
-             var t = (totalLabel.text!).replacingOccurrences(of: localeSpecificCurrencySymbol!, with: "")
-             print("localeSpecificFormatter.currencyGroupingSeparator! \(localeSpecificFormatter.currencyGroupingSeparator!)")
-             
-             t = t.replacingOccurrences(of: localeSpecificFormatter.currencyGroupingSeparator!, with: "")
-             print("t \(t)")
-             
-             if(!t.isEmpty )
-             {
-             let g = NumberFormatter().number(from: t)
-             print("g \(g)")
-             
-             // totalLabel.count(from: (g?.floatValue)!, to: Float(total), duration: 0)
-             totalLabel.countFromCurrent(to: Float(total))
-             
-             }
-             else{
-             //totalLabel.count(from: 0, to: Float(total), duration: 0)
-             totalLabel.countFromCurrent(to: Float(total))
-             
-             
-             }*/
         }
 
     }
@@ -493,7 +438,6 @@ class ViewController: UIViewController {
             let ntip = NumberFormatter().number(from: tip!)
             
             let ntipPerPerson = Double(ntip!).divided(by: nPeople as! Double)
-           // tipPerPerson.text = localeSpecificCurrencySymbol?.appending(localeSpecificFormatter.string(from: ntipPerPerson as NSNumber)!)
             
             tipPerPerson.countFromExistingValue(to: Float(ntipPerPerson))//.countFromExistingValue(to: Float(ntipPerPerson))
             
@@ -503,9 +447,18 @@ class ViewController: UIViewController {
 
 
     @IBAction func updateNoOfPeople(_ sender: Any) {
+        
         noPeopleLabel.text = String.init(Int.init((sender as! UIStepper).value))
-        calculateTotalPerPerson()
-        calculateTipPerPerson()
+        
+        let convertedNum = NumberFormatter().number(from: billText.text!) ?? 0
+        
+        let bill = Double.init(convertedNum)
+        
+        if(bill != 0)
+        {
+            calculateTotalPerPerson()
+            calculateTipPerPerson()
+        }
     }
 
 }

@@ -21,12 +21,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        //UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
         defaults.removeObject(forKey: "APP_INACTIVITY_START")
         
         let theme = ThemeManager.currentTheme()
         ThemeManager.applyTheme(theme: theme)
-        
         
         return true
     }
@@ -104,9 +102,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             viewController.totalPerPerson.text = viewController.localeSpecificCurrencySymbol?.appending("0.00")
             viewController.tipPerPerson.text = viewController.localeSpecificCurrencySymbol?.appending("0.00")
             
-
-            //UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
-
             viewController.viewWillAppear(true)
         }
         

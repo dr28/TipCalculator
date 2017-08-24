@@ -181,13 +181,10 @@ class SettingsViewController: UIViewController {
             
             if(!(numFormatter.number(from: tempPercentText!) == nil || (defaultTaxText.text?.isEmpty)!)) // invalid number
             {
-                //defaultTaxText.text = localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
-            //}
-            //else
-            //{
+ 
                 temp = defaultTipPercentage as! String
 
-                defaultTipPercentage = numFormatter.number(from: tempPercentText!)?.stringValue//defaultTaxText.text?.replacingOccurrences(of: "%", with: "")
+                defaultTipPercentage = numFormatter.number(from: tempPercentText!)?.stringValue
                 
                 if(!validatePercentageValues())
                 {
@@ -202,8 +199,6 @@ class SettingsViewController: UIViewController {
                     
                 }
                 
-                //defaultTaxText.text = localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
-                
             }
             defaultTaxText.text = localeSpecificFormatter.string(from: Float(defaultTipPercentage as! String!)! as NSNumber)!.appending("%") // Locale specific display
 
@@ -216,7 +211,7 @@ class SettingsViewController: UIViewController {
             {
                 temp = tipMinPercentage as! String
 
-                tipMinPercentage = numFormatter.number(from: tempPercentText!)?.stringValue//tipMinText.text?.replacingOccurrences(of: "%", with: "")
+                tipMinPercentage = numFormatter.number(from: tempPercentText!)?.stringValue
                 
                 if(!validatePercentageValues())
                 {
@@ -243,7 +238,6 @@ class SettingsViewController: UIViewController {
                 temp = tipMaxPercentage as! String
                 
                 tipMaxPercentage = numFormatter.number(from: tempPercentText!)?.stringValue // Locale specific display
-                //tipMaxText.text?.replacingOccurrences(of: "%", with: "")
 
                 if(!validatePercentageValues())
                 {
@@ -425,7 +419,7 @@ class SettingsViewController: UIViewController {
         {
             let tempPercentText = tipMinText.text?.replacingOccurrences(of: "%", with: "")
             
-            let convertedNum = numFormatter.number(from: tempPercentText!) ?? numFormatter.number(from: tipMinPercentage! as! String) //Float(tipMinPercentage! as! String)! as NSNumber
+            let convertedNum = numFormatter.number(from: tempPercentText!) ?? numFormatter.number(from: tipMinPercentage! as! String)
 
             if(numFormatter.number(from: tempPercentText!) == nil) // invalid number
             {
@@ -454,7 +448,7 @@ class SettingsViewController: UIViewController {
         {
             let tempPercentText = tipMaxText.text?.replacingOccurrences(of: "%", with: "")
             
-            let convertedNum = numFormatter.number(from: tempPercentText!) ?? numFormatter.number(from: tipMinPercentage! as! String) //Float(tipMinPercentage! as! String)! as NSNumber
+            let convertedNum = numFormatter.number(from: tempPercentText!) ?? numFormatter.number(from: tipMinPercentage! as! String)
 
 
             if(numFormatter.number(from: tempPercentText! ) == nil) // invalid number
@@ -518,11 +512,9 @@ class SettingsViewController: UIViewController {
         present(alertController, animated: true, completion:nil)
         
         let subview = alertController.view.subviews.first! as UIView
-        //subview.backgroundColor = UIColor.orange()
         
         let alertContentView = subview.subviews.first! as UIView
         
-        //alertContentView.backgroundColor = ThemeManager.currentTheme().secondaryColor
         alertContentView.layer.cornerRadius = 12
         alertContentView.layer.borderWidth = 1
         alertContentView.layer.borderColor = ThemeManager.currentTheme().mainColor.cgColor
